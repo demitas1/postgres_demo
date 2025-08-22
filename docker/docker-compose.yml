@@ -5,6 +5,7 @@ services:
       dockerfile: docker/postgres_dev/Dockerfile
     image: postgres_demo/postgres-bigm:latest
     container_name: postgres_bigm_demo
+    hostname: postgres_bigm_demo
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -27,6 +28,7 @@ services:
       dockerfile: docker/python_dev/Dockerfile
     image: postgres_demo/python-postgres-demo:latest
     container_name: python_postgres_demo
+    hostname: python_postgres_demo
     volumes:
       - ../src:/app/src
     depends_on:

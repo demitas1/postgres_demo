@@ -1,6 +1,14 @@
 FROM python:3.11-slim
 
+# ユーザーを作成
+RUN useradd -m -u 1000 -s /bin/bash myuser
+
+# 作業ディレクトリの所有者を変更
 WORKDIR /app
+RUN chown -R myuser:myuser /app
+
+# ユーザーを切り替え
+USER myuser
 
 # 共通依存関係をインストール
 COPY docker/python_dev/requirements.txt .
