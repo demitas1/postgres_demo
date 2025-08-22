@@ -14,14 +14,12 @@ class DatabaseConfig:
     @classmethod
     def from_environment(cls) -> 'DatabaseConfig':
         """環境変数から設定を読み込み
-        
-        実行環境を自動検出してデフォルト値を設定：
-        - コンテナ内: host=db, port=5432
-        - ホスト: host=127.0.0.1, port=5555
         """
         # Dockerコンテナ内実行の判定
         is_container = os.path.exists('/.dockerenv')
         
+        # TODO: コンテナ内でのみ実行するように変更
+        # TODO: 固定値、または環境変数 POSTGRES_* から取得する。設定されていなければエラーとする
         return cls(
             host=os.getenv('DB_HOST', 'db' if is_container else '127.0.0.1'),
             port=os.getenv('DB_PORT', '5432' if is_container else '5555'),

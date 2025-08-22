@@ -15,6 +15,7 @@ COPY docker/python_dev/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 環境変数設定（コンテナ用デフォルト値）
+# TODO: DB関係は .env + docker compose で設定できるものを使う。ここでは設定しない
 ENV DB_HOST=db
 ENV DB_PORT=5432
 ENV DB_NAME=mydatabase
