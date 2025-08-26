@@ -19,13 +19,14 @@ class DatabaseConfig:
         is_container = os.path.exists('/.dockerenv')
         
         # TODO: コンテナ内でのみ実行するように変更
-        # TODO: 固定値、または環境変数 POSTGRES_* から取得する。設定されていなければエラーとする
+
+        # 環境変数 POSTGRES_* から取得する。設定されていなければデフォルト値を返す.
         return cls(
-            host=os.getenv('DB_HOST', 'db' if is_container else '127.0.0.1'),
-            port=os.getenv('DB_PORT', '5432' if is_container else '5555'),
-            database=os.getenv('DB_NAME', 'mydatabase'),
-            user=os.getenv('DB_USER', 'postgres'),
-            password=os.getenv('DB_PASSWORD', 'mysecretpassword')
+            host=os.getenv('POSTGRES_HOST', 'db'),
+            port='5432',  # Container 側のポート 固定設定
+            database=os.getenv('POSTGRES_DB', 'mydatabase'),
+            user=os.getenv('POSTGRES_USER', 'postgres'),
+            password=os.getenv('POSTGRES_PASSWORD', 'mysecretpassword')
         )
     
     def to_connection_params(self) -> Dict[str, str]:

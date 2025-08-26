@@ -22,12 +22,6 @@ from common.csv_loader import CSVLoader
 
 def get_csv_file_path() -> str:
     """都道府県CSVファイルのパスを取得"""
-    # スクリプトの場所からプロジェクトルートを推定
-    #current_file = Path(__file__)
-    #project_root = current_file.parent.parent.parent
-    #csv_path = project_root / "test_data" / "prefectures" / "prefectures.csv"
-    # TODO: $PYTHONPATH=/app/src, /app/src/test_data/prefectures/prefectures.csv に変更
-    # TODO: $TEST_DATA_PATH を設定するべき？
     csv_path = "/app/src/test_data/prefectures/prefectures.csv"
     return str(csv_path)
 

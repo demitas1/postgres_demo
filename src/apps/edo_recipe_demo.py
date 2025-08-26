@@ -19,9 +19,6 @@ from common.recipe_search_service import RecipeSearchService
 
 def get_json_file_path() -> str:
     """江戸料理JSONファイルのパスを取得"""
-    #current_file = Path(__file__)
-    #project_root = current_file.parent.parent.parent
-    #json_path = project_root / "test_data" / "edo_ryori" / "edo_recipes_all.json"
     json_path = "/app/src/test_data/edo_ryori/edo_recipes_all.json"
     return str(json_path)
 
