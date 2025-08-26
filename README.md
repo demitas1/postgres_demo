@@ -3,128 +3,184 @@
 PostgreSQLの基本操作と全文検索システムを学習するためのプロジェクトです。
 DockerコンテナとPythonを使用して、データベース操作の実践的な学習ができます。
 
+## 主な特徴
+
+- **pg_bigm拡張**: 日本語テキストの高速全文検索
+- **Docker構成**: PostgreSQL + Python + pgAdmin の3コンテナ
+- **実践的デモ**: 基本CRUD操作から高度な検索機能まで
+- **江戸料理データ**: 歴史的レシピデータによる検索システム実演
+
 ## クイックスタート
 
 ### 1. 起動
 
-    ```bash
-    ./start.sh
-    ```
+```bash
+./start.sh
+```
 
 ### 2. 終了
 
-    ```bash
-    ./stop.sh
-    ```
+```bash
+./stop.sh
+```
 
-## python コンテナから db へ接続テスト
+### 3. 基本的な動作確認
 
-  - テーブルの作成デモ
+```bash
+# 接続テスト
+./test.sh
+```
 
-    ```console
-    $ docker exec -it python_postgres_demo /bin/bash
-    myuser@python_postgres_demo:/app$ python src/apps/task_demo.py 
-    Connected to database: DatabaseConfig(host=db, port=5432, database=mydatabase, user=postgres)
-    === Task Management Demo ===
+## デモアプリケーション
 
-    1. Creating tasks...
-    Task created successfully with ID: 1
-    Task created successfully with ID: 2
+### 基本CRUD操作デモ
 
-    2. Reading all tasks...
-    ID: 2, Title: Dockerの理解, Status: pending
-    ID: 1, Title: PostgreSQLの学習, Status: pending
+**タスク管理システム**:
+```bash
+docker exec -it python_postgres_demo /bin/bash
+python src/apps/task_demo.py
+```
 
-    3. Updating task 1...
-    Task 1 updated successfully
+**接続確認とテーブル一覧**:
+```bash
+python src/apps/connection_test.py
+```
 
-    4. Reading updated task...
-    Updated task - ID: 1, Title: PostgreSQLの学習, Status: in_progress
+**都道府県データ管理**:
+```bash
+python src/apps/prefecture_demo.py
+```
 
-    Demo completed successfully!
-    ```
-    
-  - Publicなテーブルをすべて表示
-    
-    ```console
-    myuser@python_postgres_demo:/app$ python src/apps/connection_test.py 
-    Connecting to database: DatabaseConfig(host=db, port=5432, database=mydatabase, user=postgres)
-    Connected to PostgreSQL successfully!
+### 江戸料理検索デモ（pg_bigm活用）
 
-    Public Tables in database:
-    Table: tasks
+PostgreSQLのpg_bigm拡張を使った日本語全文検索の実演：
 
-    Connection closed.
-    myuser@python_postgres_demo:/app$ 
-    ```
+```bash
+python src/apps/edo_recipe_demo.py
+```
 
+このデモでは以下の機能を体験できます：
+- **材料検索**: 指定した材料を含むレシピを類似度順で表示
+- **全文検索**: レシピ名・説明文を対象とした包括的検索  
+- **複合検索**: 複数条件を満たすレシピの検索
+- **類似度計算**: pg_bigm の `bigm_similarity()` 関数による関連性評価
 
-## ホストから psql を使う
+**詳細**: [江戸料理検索デモガイド](./docs/edo_recipe_demo.md)
 
-### 接続
+## データベース操作方法
 
-    ```bash
-    psql -h localhost -p 5555 -U postgres -d mydatabase
-    ```
+### コマンドライン（psql）
 
-  - -h localhost: ホスト名
-  - -p 5555: ホスト側に開かれているポート
-  - -U username: ユーザー名（実際のユーザー名に置き換える）`POSTGRES_USER`
-  - -d database_name: データベース名（実際のDB名に置き換える）`POSTGRES_DB`
-  
-  パスワードを尋ねられるので、`POSTGRES_PASSWORD` を入力.
+ホストマシンからpsqlを使用してデータベースに直接接続：
 
-### クエリ実行例
+```bash
+psql -h localhost -p 5555 -U postgres -d mydatabase
+```
 
-    ```console
-    mydatabase=# SELECT table_name 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_type = 'BASE TABLE';
-     table_name 
-    ------------
-     tasks
-    (1 row)
+**詳細**: [psql使用ガイド](./docs/psql_usage.md)
 
-    mydatabase=# SELECT * from tasks;
-     id |      title       |        description         |   status    |         created_at         |         updated_at         
-    ----+------------------+----------------------------+-------------+----------------------------+----------------------------
-      2 | Dockerの理解     | コンテナ技術の基礎を学ぶ   | pending     | 2025-08-22 05:42:04.289251 | 2025-08-22 05:42:04.289251
-      1 | PostgreSQLの学習 | 基本的なCRUD操作を実装する | in_progress | 2025-08-22 05:42:04.28822  | 2025-08-22 05:42:04.289956
-    (2 rows)
-    ```
+### GUI操作（pgAdmin）
 
-## pgAdmin コンテナを使う
+WebブラウザからGUIでデータベース管理：
 
-- `localhost:8080` にアクセス
-- ログイン
+```
+http://localhost:8080
+```
 
-  <img src="./docs/image/pgadmin_login.jpg" style="width:400px">
+**詳細**: [pgAdmin使用ガイド](./docs/pgadmin_usage.md)
 
-  - Email Address: `.env` で設定した `PGADMIN_EMAIL`
-  - Password: `.env` で設定した `PGADMIN_PASSWORD`
+## プロジェクト構成
 
-- New server
-  - General
+```
+postgres_demo/
+├── docker/                    # Docker設定
+│   ├── docker-compose.yml     # コンテナ構成定義
+│   ├── env.example            # 環境変数テンプレート
+│   └── postgres_dev/          # PostgreSQL + pg_bigm設定
+├── src/
+│   ├── apps/                  # デモアプリケーション
+│   ├── common/                # 共通ライブラリ
+│   └── test_data/             # テストデータ
+├── docs/                      # ドキュメント
+└── *.sh                       # 操作スクリプト
+```
 
-    <img src="./docs/image/pgadmin_new_server_general.jpg" style="width:400px">
-  
-    - Name: 適当な名称
+## 環境設定
 
-  - Connection
+1. 環境設定ファイルをコピー：
+   ```bash
+   cp docker/env.example docker/.env
+   ```
 
-    <img src="./docs/image/pgadmin_new_server_connection.jpg" style="width:400px">
-    
-    - Host name/address: コンテナ名 `db`
-    - Port: コンテナ側　`db` のポート `5432`
-    - Maintenance database: `POSTGRES_DB`
-    - Username: `POSTGRES_USER`
-    - Password: `POSTGRES_PASSWORD`
-    
-  上記を設定して `Save`.
-  
-- Query Tool
+2. 必要に応じて `.env` ファイルを編集：
+   ```bash
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=mysecretpassword
+   POSTGRES_DB=mydatabase
+   POSTGRES_PORT=5555
+   PGADMIN_EMAIL=admin@example.com
+   PGADMIN_PASSWORD=admin123
+   ```
 
-  `mydatabase (POSTGRES_DB)` から Query Tool を開く
+## 技術スタック
 
-  <img src="./docs/image/pgadmin_query_tool.jpg" style="width:600px">
+- **PostgreSQL 16**: メインデータベース
+- **pg_bigm 1.2**: 日本語全文検索拡張
+- **Python 3**: アプリケーション開発
+- **pgAdmin 4**: Web管理インターface
+- **Docker**: コンテナ化環境
+
+## 学習内容
+
+このプロジェクトで学習できる内容：
+
+1. **PostgreSQL基礎**
+   - CRUD操作の実装
+   - テーブル設計とリレーション
+   - インデックス設計と最適化
+
+2. **pg_bigm拡張**
+   - 日本語全文検索の実装
+   - GINインデックスの活用
+   - 類似度検索アルゴリズム
+
+3. **Python-PostgreSQL連携**
+   - psycopg2によるデータベース接続
+   - コンテキストマネージャーの活用
+   - エラーハンドリング
+
+4. **Docker環境**
+   - マルチコンテナアプリケーション
+   - 環境変数による設定管理
+   - ネットワーク構成
+
+## トラブルシューティング
+
+### コンテナ起動問題
+
+```bash
+# ログ確認
+docker logs postgres_bigm_demo
+docker logs python_postgres_demo
+
+# 完全リセット
+./stop.sh
+docker system prune -f
+./start.sh
+```
+
+### データベース接続問題
+
+```bash
+# 接続確認
+./test.sh
+
+# 手動接続テスト
+docker exec postgres_bigm_demo pg_isready -U postgres
+```
+
+## ドキュメント
+
+- [江戸料理検索デモガイド](./docs/edo_recipe_demo.md)
+- [psql使用ガイド](./docs/psql_usage.md)
+- [pgAdmin使用ガイド](./docs/pgadmin_usage.md)
