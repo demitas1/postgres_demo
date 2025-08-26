@@ -97,8 +97,8 @@ def demo_ingredient_search(search_service: RecipeSearchService) -> None:
         results = search_service.search_by_ingredient(ingredient, 3)
         
         if results:
-            for recipe_id, recipe_name, ingredients in results:
-                print(f"  • {recipe_name} (ID: {recipe_id})")
+            for recipe_id, recipe_name, ingredients, similarity_score in results:
+                print(f"  • {recipe_name} (ID: {recipe_id}, 類似度: {similarity_score:.3f})")
                 print(f"    材料: {', '.join(ingredients[:3])}{'...' if len(ingredients) > 3 else ''}")
         else:
             print(f"  '{ingredient}' を使ったレシピが見つかりませんでした")
@@ -116,8 +116,8 @@ def demo_fulltext_search(search_service: RecipeSearchService) -> None:
         results = search_service.search_by_fulltext(keyword, 3)
         
         if results:
-            for recipe_id, recipe_name, description, rank in results:
-                print(f"  • {recipe_name} (ID: {recipe_id}, スコア: {rank:.3f})")
+            for recipe_id, recipe_name, description, similarity_score in results:
+                print(f"  • {recipe_name} (ID: {recipe_id}, 類似度: {similarity_score:.3f})")
                 if description:
                     desc_preview = description[:50].replace('\n', ' ')
                     print(f"    説明: {desc_preview}{'...' if len(description) > 50 else ''}")
@@ -141,8 +141,10 @@ def demo_combined_search(search_service: RecipeSearchService) -> None:
         results = search_service.search_combined(recipe_keyword, ingredient_keyword, 2)
         
         if results:
-            for recipe_id, recipe_name, description, ingredients in results:
-                print(f"  • {recipe_name} (ID: {recipe_id})")
+            for result in results:
+                recipe_id, recipe_name, description, ingredients = result[:4]
+                total_score = result[-1] if len(result) > 4 else 0  # Handle variable tuple length
+                print(f"  • {recipe_name} (ID: {recipe_id}, 総合スコア: {total_score:.3f})")
                 print(f"    材料: {', '.join(ingredients[:3])}{'...' if len(ingredients) > 3 else ''}")
                 if description:
                     desc_preview = description[:40].replace('\n', ' ')

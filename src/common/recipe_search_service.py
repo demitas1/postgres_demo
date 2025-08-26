@@ -30,28 +30,30 @@ class RecipeSearchService:
             raise
     
     def search_by_ingredient(self, ingredient_keyword: str, limit: int = 10) -> Optional[List[Tuple]]:
-        """材料での検索
+        """材料での検索 (pg_bigm使用)
         
         Args:
             ingredient_keyword: 材料キーワード
             limit: 取得件数
             
         Returns:
-            (レシピID, レシピ名, 材料) のタプルリスト、失敗時はNone
+            (レシピID, レシピ名, 材料, 類似度) のタプルリスト、失敗時はNone
         """
         try:
             query = """
-            SELECT DISTINCT r.id, r.name, array_agg(ri.ingredient ORDER BY ri.sort_order) as ingredients
+            SELECT DISTINCT r.id, r.name, array_agg(ri.ingredient ORDER BY ri.sort_order) as ingredients,
+                   MAX(bigm_similarity(ri.ingredient, %s)) as max_similarity
             FROM edo_recipes r
             JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-            WHERE ri.ingredient ILIKE %s
+            WHERE ri.ingredient LIKE %s
             GROUP BY r.id, r.name
-            ORDER BY r.name
+            ORDER BY max_similarity DESC, r.name
             LIMIT %s;
             """
             
             search_pattern = f"%{ingredient_keyword}%"
-            self.cur.execute(query, (search_pattern, limit))
+            
+            self.cur.execute(query, (ingredient_keyword, search_pattern, limit))
             return self.cur.fetchall()
             
         except Error as e:
@@ -59,30 +61,31 @@ class RecipeSearchService:
             return None
     
     def search_by_fulltext(self, search_keyword: str, limit: int = 10) -> Optional[List[Tuple]]:
-        """全文検索（レシピ名・説明文）
+        """全文検索 (pg_bigm使用)
         
         Args:
             search_keyword: 検索キーワード
             limit: 取得件数
             
         Returns:
-            (レシピID, レシピ名, 説明文, ランク) のタプルリスト、失敗時はNone
+            (レシピID, レシピ名, 説明文, 類似度スコア) のタプルリスト、失敗時はNone
         """
         try:
             query = """
             SELECT r.id, r.name, r.description,
-                   ts_rank(
-                       to_tsvector('simple', r.name || ' ' || COALESCE(r.description, '')),
-                       plainto_tsquery('simple', %s)
-                   ) as rank
+                   GREATEST(
+                       bigm_similarity(r.name, %s),
+                       bigm_similarity(COALESCE(r.description, ''), %s)
+                   ) as similarity_score
             FROM edo_recipes r
-            WHERE to_tsvector('simple', r.name || ' ' || COALESCE(r.description, '')) 
-                  @@ plainto_tsquery('simple', %s)
-            ORDER BY rank DESC, r.name
+            WHERE (r.name LIKE %s OR COALESCE(r.description, '') LIKE %s)
+            ORDER BY similarity_score DESC, r.name
             LIMIT %s;
             """
             
-            self.cur.execute(query, (search_keyword, search_keyword, limit))
+            search_pattern = f"%{search_keyword}%"
+            
+            self.cur.execute(query, (search_keyword, search_keyword, search_pattern, search_pattern, limit))
             return self.cur.fetchall()
             
         except Error as e:
@@ -90,7 +93,7 @@ class RecipeSearchService:
             return None
     
     def search_combined(self, recipe_keyword: str, ingredient_keyword: str, limit: int = 10) -> Optional[List[Tuple]]:
-        """複合検索（レシピ名 + 材料）
+        """複合検索 (pg_bigm使用)
         
         Args:
             recipe_keyword: レシピ名キーワード
@@ -98,25 +101,39 @@ class RecipeSearchService:
             limit: 取得件数
             
         Returns:
-            (レシピID, レシピ名, 説明文, 材料リスト) のタプルリスト、失敗時はNone
+            (レシピID, レシピ名, 説明文, 材料リスト, 総合スコア) のタプルリスト、失敗時はNone
         """
         try:
             query = """
             SELECT DISTINCT r.id, r.name, r.description, 
-                   array_agg(ri.ingredient ORDER BY ri.sort_order) as ingredients
+                   array_agg(ri.ingredient ORDER BY ri.sort_order) as ingredients,
+                   GREATEST(
+                       bigm_similarity(r.name, %s),
+                       bigm_similarity(COALESCE(r.description, ''), %s)
+                   ) as recipe_similarity,
+                   MAX(bigm_similarity(ri.ingredient, %s)) as ingredient_similarity,
+                   (GREATEST(
+                       bigm_similarity(r.name, %s),
+                       bigm_similarity(COALESCE(r.description, ''), %s)
+                   ) + MAX(bigm_similarity(ri.ingredient, %s))) as total_score
             FROM edo_recipes r
             JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-            WHERE (r.name ILIKE %s OR r.description ILIKE %s)
-              AND ri.ingredient ILIKE %s
+            WHERE (r.name LIKE %s OR COALESCE(r.description, '') LIKE %s)
+              AND ri.ingredient LIKE %s
             GROUP BY r.id, r.name, r.description
-            ORDER BY r.name
+            ORDER BY total_score DESC, r.name
             LIMIT %s;
             """
             
             recipe_pattern = f"%{recipe_keyword}%"
             ingredient_pattern = f"%{ingredient_keyword}%"
             
-            self.cur.execute(query, (recipe_pattern, recipe_pattern, ingredient_pattern, limit))
+            self.cur.execute(query, (
+                recipe_keyword, recipe_keyword, ingredient_keyword,  # similarity計算用
+                recipe_keyword, recipe_keyword, ingredient_keyword,  # total_score計算用
+                recipe_pattern, recipe_pattern, ingredient_pattern,  # WHERE条件用
+                limit
+            ))
             return self.cur.fetchall()
             
         except Error as e:

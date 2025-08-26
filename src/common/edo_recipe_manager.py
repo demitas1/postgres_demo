@@ -61,6 +61,8 @@ class EdoRecipeManager:
         Returns:
             作成成功時はTrue、失敗時はFalse
         """
+        # pg_bigm extension enable query
+        enable_extension_query = "CREATE EXTENSION IF NOT EXISTS pg_bigm;"
         # メインテーブル
         create_recipes_table_query = """
         CREATE TABLE IF NOT EXISTS edo_recipes (
@@ -96,17 +98,21 @@ class EdoRecipeManager:
         );
         """
         
-        # インデックス作成クエリ（デフォルト設定を使用）
+        # pg_bigm用のGINインデックス作成クエリ
         create_indexes_queries = [
-            "CREATE INDEX IF NOT EXISTS idx_recipes_name ON edo_recipes USING gin (to_tsvector('simple', name));",
-            "CREATE INDEX IF NOT EXISTS idx_recipes_description ON edo_recipes USING gin (to_tsvector('simple', description));",
-            "CREATE INDEX IF NOT EXISTS idx_ingredients_text ON recipe_ingredients USING gin (to_tsvector('simple', ingredient));",
+            "CREATE INDEX IF NOT EXISTS idx_recipes_name_bigm ON edo_recipes USING gin (name gin_bigm_ops);",
+            "CREATE INDEX IF NOT EXISTS idx_recipes_description_bigm ON edo_recipes USING gin (description gin_bigm_ops);",
+            "CREATE INDEX IF NOT EXISTS idx_ingredients_bigm ON recipe_ingredients USING gin (ingredient gin_bigm_ops);",
             "CREATE INDEX IF NOT EXISTS idx_ingredients_recipe_id ON recipe_ingredients(recipe_id);",
             "CREATE INDEX IF NOT EXISTS idx_instructions_recipe_id ON recipe_instructions(recipe_id);",
             "CREATE INDEX IF NOT EXISTS idx_instructions_type ON recipe_instructions(instruction_type);"
         ]
         
         try:
+            # pg_bigm拡張を有効化
+            self.cur.execute(enable_extension_query)
+            print("✓ pg_bigm拡張を有効化しました")
+            
             # テーブル作成
             self.cur.execute(create_recipes_table_query)
             print("✓ edo_recipesテーブルを作成しました")
@@ -117,10 +123,10 @@ class EdoRecipeManager:
             self.cur.execute(create_instructions_table_query)
             print("✓ recipe_instructionsテーブルを作成しました")
             
-            # インデックス作成
+            # pg_bigm用インデックス作成
             for index_query in create_indexes_queries:
                 self.cur.execute(index_query)
-            print("✓ 検索用インデックスを作成しました")
+            print("✓ pg_bigm検索用インデックスを作成しました")
             
             self.conn.commit()
             return True
