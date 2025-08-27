@@ -1,10 +1,11 @@
 FROM postgres:16
 
-# Install dependencies, download and install pg_bigm, configure PostgreSQL, and clean up
+# Install dependencies, download and install pg_bigm and pg_vector, configure PostgreSQL, and clean up
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends \
   build-essential \
   curl \
+  git \
   libicu-dev \
   postgresql-server-dev-16 \
   ca-certificates
@@ -20,13 +21,21 @@ RUN cd /tmp/pg_bigm-1.2-20240606 \
   && make USE_PGXS=1 \
   && make USE_PGXS=1 install
 
+# Download and build pg_vector
+RUN cd /tmp \
+  && git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git \
+  && cd pgvector \
+  && make \
+  && make install
+
 # Configure PostgreSQL to preload pg_bigm
 RUN echo "shared_preload_libraries = 'pg_bigm'" >> /usr/share/postgresql/postgresql.conf.sample
 
 # Cleanup
 RUN cd / \
   && rm -rf /tmp/pg_bigm-1.2-20240606 \
-  && apt-get remove -y build-essential \
+  && rm -rf /tmp/pgvector \
+  && apt-get remove -y build-essential git \
   && apt-get autoremove -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*

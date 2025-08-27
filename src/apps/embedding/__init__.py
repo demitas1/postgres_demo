@@ -1,0 +1,1 @@
+"""Embedding module for vector search functionality."""
