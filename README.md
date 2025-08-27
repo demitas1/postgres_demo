@@ -67,6 +67,22 @@ python src/apps/edo_recipe_demo.py
 
 **詳細**: [江戸料理検索デモガイド](./docs/edo_recipe_demo.md)
 
+### 江戸料理ベクター検索デモ（pg_vector + OpenAI活用）
+
+PostgreSQLのpg_vector拡張とOpenAI埋め込みを使った意味的レシピ検索の実演：
+
+```bash
+python src/apps/edo_recipe_vector_demo.py
+```
+
+このデモでは以下の機能を体験できます：
+- **意味的検索**: 自然言語クエリによる柔軟なレシピ検索
+- **類似レシピ発見**: 指定レシピからの類似度ランキング
+- **ハイブリッド検索**: キーワード検索×ベクター検索の統合
+- **レシピ類似性分析**: レシピ間関係性の事前計算と推薦
+
+**詳細**: [江戸料理ベクター検索デモガイド](./docs/edo_recipe_vector_demo.md)
+
 ## データベース操作方法
 
 ### コマンドライン（psql）
@@ -126,7 +142,9 @@ postgres_demo/
 
 - **PostgreSQL 16**: メインデータベース
 - **pg_bigm 1.2**: 日本語全文検索拡張
+- **pg_vector 0.7.4**: ベクター検索拡張
 - **Python 3**: アプリケーション開発
+- **OpenAI API**: text-embedding-3-small埋め込みモデル
 - **pgAdmin 4**: Web管理インターface
 - **Docker**: コンテナ化環境
 
@@ -144,12 +162,22 @@ postgres_demo/
    - GINインデックスの活用
    - 類似度検索アルゴリズム
 
-3. **Python-PostgreSQL連携**
+3. **pg_vector拡張**
+   - ベクター検索の実装
+   - HNSWインデックスによる高速類似度検索
+   - 意味的類似性とコサイン類似度
+
+4. **AI連携**
+   - OpenAI埋め込みAPIの活用
+   - テキストベクター化
+   - 意味的検索システム
+
+5. **Python-PostgreSQL連携**
    - psycopg2によるデータベース接続
    - コンテキストマネージャーの活用
    - エラーハンドリング
 
-4. **Docker環境**
+6. **Docker環境**
    - マルチコンテナアプリケーション
    - 環境変数による設定管理
    - ネットワーク構成
@@ -181,6 +209,7 @@ docker exec postgres_bigm_demo pg_isready -U postgres
 
 ## ドキュメント
 
-- [江戸料理検索デモガイド](./docs/edo_recipe_demo.md)
+- [江戸料理検索デモガイド](./docs/edo_recipe_demo.md) - pg_bigm全文検索
+- [江戸料理ベクター検索デモガイド](./docs/edo_recipe_vector_demo.md) - pg_vector意味検索
 - [psql使用ガイド](./docs/psql_usage.md)
 - [pgAdmin使用ガイド](./docs/pgadmin_usage.md)
